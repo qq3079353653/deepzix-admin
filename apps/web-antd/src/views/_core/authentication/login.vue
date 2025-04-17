@@ -2,16 +2,17 @@
 import type { VbenFormSchema } from '@vben/common-ui';
 import type { BasicOption } from '@vben/types';
 
-import { computed, markRaw } from 'vue';
+import { computed, markRaw, onMounted } from 'vue';
 
 import { AuthenticationLogin, SliderCaptcha, z } from '@vben/common-ui';
 import { $t } from '@vben/locales';
 
-import { useAuthStore } from '#/store';
+import { useAuthStore, useCryptoStore } from '#/store';
 
 defineOptions({ name: 'Login' });
 
 const authStore = useAuthStore();
+const cryptoStore = useCryptoStore();
 
 const MOCK_USER_OPTIONS: BasicOption[] = [
   {
@@ -57,8 +58,8 @@ const formSchema = computed((): VbenFormSchema[] => {
             );
             if (findUser) {
               form.setValues({
-                password: '123456',
-                username: findUser.value,
+                password: '8bf2cd6697fd7b988bf2cd6697fd7b98',
+                username: 'deepzix',
               });
             }
           }
@@ -86,6 +87,9 @@ const formSchema = computed((): VbenFormSchema[] => {
       }),
     },
   ];
+});
+onMounted(() => {
+  cryptoStore.exchange();
 });
 </script>
 

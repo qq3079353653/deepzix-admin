@@ -50,10 +50,18 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
    */
   async function doRefreshToken() {
     const accessStore = useAccessStore();
-    const resp = await refreshTokenApi();
-    const newToken = resp.data;
-    accessStore.setAccessToken(newToken);
-    return newToken;
+    const refreshToken = accessStore.refreshToken as string;
+    const body = {
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      scope: 'openid',
+    };
+    const authorization = `Basic ${window.btoa(`${import.meta.env.VITE_OAUTH2_CLIENT_ID}:${import.meta.env.VITE_OAUTH2_CLIENT_SECRET}`)}`;
+    const { accessToken, refreshToken: newRefreshToken } =
+      await refreshTokenApi(body, authorization);
+    accessStore.setAccessToken(accessToken);
+    accessStore.setRefreshToken(newRefreshToken);
+    return accessToken;
   }
 
   function formatToken(token: null | string) {
@@ -64,8 +72,9 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   client.addRequestInterceptor({
     fulfilled: async (config) => {
       const accessStore = useAccessStore();
-
-      config.headers.Authorization = formatToken(accessStore.accessToken);
+      if (!config.headers?.Authorization) {
+        config.headers.Authorization = formatToken(accessStore.accessToken);
+      }
       config.headers['Accept-Language'] = preferences.app.locale;
       return config;
     },
@@ -76,7 +85,7 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
     defaultResponseInterceptor({
       codeField: 'code',
       dataField: 'data',
-      successCode: 0,
+      successCode: '20000',
     }),
   );
 

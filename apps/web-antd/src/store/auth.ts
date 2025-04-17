@@ -11,6 +11,7 @@ import { defineStore } from 'pinia';
 
 import { getAccessCodesApi, getUserInfoApi, loginApi, logoutApi } from '#/api';
 import { $t } from '#/locales';
+import { useCryptoStore } from '#/store';
 
 export const useAuthStore = defineStore('auth', () => {
   const accessStore = useAccessStore();
@@ -23,6 +24,7 @@ export const useAuthStore = defineStore('auth', () => {
    * 异步处理登录操作
    * Asynchronously handle the login process
    * @param params 登录表单数据
+   * @param onSuccess 成功回调
    */
   async function authLogin(
     params: Recordable<any>,
@@ -32,11 +34,26 @@ export const useAuthStore = defineStore('auth', () => {
     let userInfo: null | UserInfo = null;
     try {
       loginLoading.value = true;
-      const { accessToken } = await loginApi(params);
+      const cryptoStore = useCryptoStore();
+      const newPassword = cryptoStore.encrypt(params.password);
+      const username = params.username;
+      const newParams = {
+        username,
+        password: newPassword,
+        grant_type: 'password',
+        scope: 'openid',
+      };
+      const authorization = `Basic ${window.btoa(`${import.meta.env.VITE_OAUTH2_CLIENT_ID}:${import.meta.env.VITE_OAUTH2_CLIENT_SECRET}`)}`;
+
+      const { accessToken, refreshToken } = await loginApi(
+        newParams,
+        authorization,
+      );
 
       // 如果成功获取到 accessToken
-      if (accessToken) {
+      if (accessToken && refreshToken) {
         accessStore.setAccessToken(accessToken);
+        accessStore.setRefreshToken(refreshToken);
 
         // 获取用户信息并存储到 accessStore 中
         const [fetchUserInfoResult, accessCodes] = await Promise.all([
