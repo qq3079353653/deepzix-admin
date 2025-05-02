@@ -107,6 +107,7 @@ export default function createCrudOptions(): CreateCrudOptionsRet {
           width: '850px',
         },
       },
+      table: { rowKey: 'menuId' },
       columns: {
         menuId: {
           column: {
